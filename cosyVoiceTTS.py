@@ -11,7 +11,6 @@ import os
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.append(project_root)
-from config.model_config import get_model_cache_dir
 
 # 获取CosyVoice路径
 COSYVOICE_PATH = os.path.join(os.path.dirname(__file__), 'CosyVoice')
@@ -142,10 +141,9 @@ AUDIO_CHANNELS = 1            # 单声道输出
 AUDIO_BITS_PER_SAMPLE = 16    # 16位PCM
 
 # 初始化CosyVoice模型
-model_path = os.path.join(get_model_cache_dir("modelscope"), "iic\\CosyVoice2-0___5B")
 
 # 优化模型加载和配置
-def optimize_cosyvoice_model():
+def optimize_cosyvoice_model(model_path):
     # 导入CosyVoice2模块
     CosyVoice2_class, _ = _import_cosyvoice()
     
@@ -227,11 +225,13 @@ class AudioBuffer:
 
 
 class CosyVoiceTTS:
-    def __init__(self,tts_volume=1.0,tts_speed=1.0,video_path="input.wav"):
+    def __init__(self,model_path="iic/CosyVoice2-0___5B",tts_volume=1.0,tts_speed=1.0,video_path="input.wav"):
         self.recorded_audio = None  # 存储录制的音频
         self.default_audio = None   # 存储默认音频
         self.prompt_speech_16k = None
-        self.cosyvoice = optimize_cosyvoice_model()
+        self.cosyvoice = optimize_cosyvoice_model(model_path)
+        self.tts_speed = tts_speed
+        self.tts_volume = tts_volume
         self.load_default_audio(video_path if video_path is not None else "input.wav")
         self._is_registered = False  # 添加标志位
         self.stop_inference = False  # 添加推理停止标志
@@ -311,7 +311,8 @@ class CosyVoiceTTS:
                 tts_text, 
                 instruct_text, 
                 cloneprompt_speech_16k, 
-                stream=stream
+                stream=stream,
+                speed=self.tts_speed,
             ):
                 # 检查是否请求停止推理
                 if self.stop_inference:
